@@ -25,13 +25,14 @@ class Sparql():
 
 		for result in results['results']['bindings']:
 			if any (prop in result['property']['value'] for prop in self.PROPERTIES): 
-				
-				rs[ self.cleanProperty(result['property']['value']) ] = self.cleanProperty(result['value']['value'])
+				rs[ self.cleanProperty(result['property']['value']) ] = (self.cleanProperty(result['value']['value']) ,result['value']['type'] )
 
 		return rs
 
 	def cleanProperty(self, prop):
 		return str(prop.split("/")[-1])
 
-s = Sparql("Beatrix_of_the_Netherlands")
 
+if __name__ == "__main__":
+	s = Sparql("Beatrix_of_the_Netherlands")
+	print(s.result)
