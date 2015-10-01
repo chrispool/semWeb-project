@@ -1,21 +1,37 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
 
-sparql = SPARQLWrapper("http://dbpedia.org/sparql")
-sparql.setQuery("""
-    
-    PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX dbp: <http://dbpedia.org/property/>
-PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX dcterms: <http://purl.org/dc/terms/>
+class Sparql():
+	def __init__(self, resource):
+		self.PROPERTIES = ['mother', 'father', 'spouse', 'abstract']
+		self.wrapper = SPARQLWrapper("http://dbpedia.org/sparql")
+		self.result = self.queryResource(resource)
 
-select ?p ?o where {
-  dbo:London ?p ?o
-  
-}
-""")
-sparql.setReturnFormat(JSON)
-results = sparql.query().convert()
-print(results)
+
+	def queryResource(self, resource):
+		rs = {}
+		resource = "<http://dbpedia.org/resource/" + resource + ">"
+		self.wrapper.setQuery("""	    
+		PREFIX db: <http://dbpedia.org/resource/>
+		select ?property ?value 
+		where { 
+		{
+		   """ + resource + """ ?property ?value. 
+		}
+
+		}
+		""")
+		self.wrapper.setReturnFormat(JSON)
+		results = self.wrapper.query().convert()
+
+		for result in results['results']['bindings']:
+			if any (prop in result['property']['value'] for prop in self.PROPERTIES): 
+				
+				rs[ self.cleanProperty(result['property']['value']) ] = self.cleanProperty(result['value']['value'])
+
+		return rs
+
+	def cleanProperty(self, prop):
+		return str(prop.split("/")[-1])
+
+s = Sparql("Beatrix_of_the_Netherlands")
+

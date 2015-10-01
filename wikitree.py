@@ -1,24 +1,30 @@
+from sparql import Sparql
+from collections import defaultdict
+
 class Tree:
 #family tree
 	
 	def __init__(self, firstPerson):
-		self.allFamilyMembers = {}
+		self.allFamilyMembers = defaultdict(list)
 		self.allFamilyMembers[firstPerson] = Person(firstPerson)
-		self.processNextFamilyMember(self.allFamilyMembers[firstPerson] , [], 0)
+		self.processNextFamilyMember(self.allFamilyMembers[firstPerson] , [])
 		
 	
-	def processNextFamilyMember(self, person, remaingPersons, i):
-		
-		i = i + 1#for testing only 50 iterations
-
-
+	def processNextFamilyMember(self, person, remaingPersons):
 		#get family members
+		
 		for familyMember in person.returnFamilyMembers():
-			self.allFamilyMembers[familyMember] = Person(familyMember)	
-			remaingPersons.extend(self.allFamilyMembers[familyMember].returnFamilyMembers())
-		if len(remaingPersons) > 0 and i < 50:
-			next = self.allFamilyMembers[remaingPersons.pop(0)]
-			self.processNextFamilyMember(next, remaingPersons, i)
+			self.allFamilyMembers[familyMember] = Person(familyMember)
+
+			#put all unprocessed members on remainPersonlist
+			familyMembers = self.allFamilyMembers[familyMember].returnFamilyMembers()
+			l = [m for m in familyMembers if m not in self.allFamilyMembers and m not in remaingPersons]	
+			remaingPersons.extend(l)
+			print(remaingPersons)
+
+		if len(remaingPersons) > 0:			
+			next = Person(remaingPersons.pop(0))
+			self.processNextFamilyMember(next, remaingPersons)
 		else:
 			print(self.allFamilyMembers["Beatrix_of_the_Netherlands"])
 			
@@ -37,7 +43,8 @@ class Person:
 		return "Name = {},  Spouse= {}, Mother = {}, Father = {}".format(self.fullName, self.spouse, self.mother, self.father) 
 
 	def returnFamilyMembers(self):
-		return list(self.spouse + self.mother + self.father)	
+		newlist = [self.mother , self.father , self.spouse]
+		return newlist
 		
 	def getFullName(self):
 		return self.fullName
@@ -47,16 +54,38 @@ class getWikiInfo:
 
 	def __init__(self, person):
 		self.person = person
-		
+		self.query = Sparql(person)
+		self.setSpouse()
+		self.setMother()
+		self.setFather()
+	
+
+	def setSpouse(self):
+		if 'spouse' in self.query.result:
+			self.spouse = self.query.result['spouse']
+		else:
+			self.spouse = []	
+	
+	def setMother(self):
+		if 'mother' in self.query.result:
+			self.mother = self.query.result['mother']
+		else:
+			self.mother = []	
+	
+	def setFather(self):
+		if 'father' in self.query.result:
+			self.father = self.query.result['father']
+		else:
+			self.father = []	
 		
 	def getSpouse(self):
-		return ['Claus']
-
+		return self.spouse
+	
 	def getMother(self):
-		return ['Juliana']
+		return self.mother
 
 	def getFather(self):
-		return ['Bernard']
+		return self.father
 
 	def getFullName(self):
 		return ['Beatrix van Oranje']
