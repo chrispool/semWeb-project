@@ -25,7 +25,11 @@ class Sparql():
 
 		for result in results['results']['bindings']:
 			if any (prop in result['property']['value'] for prop in self.PROPERTIES): 
-				rs[ self.cleanProperty(result['property']['value']) ] = (self.cleanProperty(result['value']['value']) ,result['value']['type'] )
+				if 'xml:lang' in result['value']:
+					if result['value']['xml:lang'] == 'en':
+						rs[ self.cleanProperty(result['property']['value']) ] = (self.cleanProperty(result['value']['value']) ,result['value']['type'] )
+				else:
+					rs[ self.cleanProperty(result['property']['value']) ] = (self.cleanProperty(result['value']['value']) ,result['value']['type'] )
 
 		return rs
 
