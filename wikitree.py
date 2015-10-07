@@ -35,14 +35,15 @@ class Tree:
 
 
 		
-	def traverseTree(self, parents, n = 0, i = 0):
+	def traverseTree(self, parents, result = []):
 		newList = []
-		
+		val = []
+		result.append(parents)
 		for parent in parents:
 			father = parent[0] 
 			mother = parent[1]
 
-			print(i, father, mother)
+			
 			if father == 'Unknown':
 				motherOfFather = 'Unknown'
 				fatherOfFather = 'Unknown'
@@ -57,21 +58,40 @@ class Tree:
 				motherOfMother = self.allFamilyMembers[str(mother)].getFather()[0]
 				fatherOfMother = self.allFamilyMembers[str(mother)].getMother()[0]
 
-			
+			val.extend([fatherOfFather, motherOfFather, fatherOfMother, motherOfMother]) 
 			l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother)]
-			n = n + 2		
-		newList.extend(l)
+				
+			newList.extend(l)
 		
-		i = i + 1
-
-		if len(self.allFamilyMembers.keys()) > n :
-			self.traverseTree(newList, n, i)
+	
+		
+		if len(set(val)) == 1 and 'Unknown' in set(val):
+			print("Finished")
+			self.printTree(result)
+		else:
+			self.traverseTree(newList, result)
+		
 
 
 
 
 		#self.traverseTree(self.allFamilyMembers[str(father[0])].getFather(), self.allFamilyMembers[str(mother[0])].getMother())
-		
+
+	def printTree(self, result):
+		lengthStart = len(result[-1])
+		colspan = 0.5
+		for i, row in enumerate(reversed(result)):
+			colspan = colspan * 2
+			print("<tr>")
+			for father,mother in row:
+				print("<td colspan=" + str(int(colspan)) + ">" + father + " - " + mother + "</td>")
+			print("</tr>")
+			print()
+			
+
+
+
+			
 		
 
 		
