@@ -1,12 +1,20 @@
 from sparql import Sparql
 from collections import defaultdict
 import sys
+import nltk.data
+from nltk.tag.stanford import NERTagger 
+
+import re
+
+
 
 
 class Tree:
 #family tree
 	
 	def __init__(self, firstPerson):
+		
+		self.maxIter = 100
 		self.allFamilyMembers = {}
 		self.processNextFamilyMember(firstPerson)
 		parents = tuple( (self.allFamilyMembers[firstPerson].getFather()[0], self.allFamilyMembers[firstPerson].getMother()[0] ))
@@ -14,6 +22,7 @@ class Tree:
 		
 	
 	def processNextFamilyMember(self, person, remaingPersons = set()):
+		#print(person, len(self.allFamilyMembers.keys()))
 		#add person
 		self.allFamilyMembers[person] = Person(person)
 		#print( "{} {} - {} ".format(person, len(self.allFamilyMembers.keys()), len(remaingPersons)))
@@ -23,15 +32,15 @@ class Tree:
 		#add relatives that are not allready retrieved to remainingperson list
 		if len(relatives) > 0:
 			remaingPersons |= set([relative for relative in relatives if relative not in self.allFamilyMembers])	
-				
+		
+
+		if len(self.allFamilyMembers.keys()) > self.maxIter:
+			remaingPersons = set()
+		
 		#process new person from list is there are any
 		if len(remaingPersons) > 0:		
 			self.processNextFamilyMember(remaingPersons.pop(), remaingPersons)	
-		#else print the tree
-		else:
-			for key in self.allFamilyMembers:
-				pass
-				#print(self.allFamilyMembers[key])
+		
 
 
 		
@@ -44,29 +53,47 @@ class Tree:
 			mother = parent[1]
 
 			
-			if father == 'Unknown':
+			if str(father) == 'Unknown':
 				motherOfFather = 'Unknown'
 				fatherOfFather = 'Unknown'
+				fatherAbsParents = 'Unknown'
 			else:
-				motherOfFather = self.allFamilyMembers[str(father)].getFather()[0]
-				fatherOfFather = self.allFamilyMembers[str(father)].getMother()[0]
+				if father in self.allFamilyMembers:
+					motherOfFather = self.allFamilyMembers[str(father)].getFather()[0]
+					fatherOfFather = self.allFamilyMembers[str(father)].getMother()[0]
+					fatherAbsParents = self.allFamilyMembers[str(father)].getAbstractParents()[0]
+				else:
+					motherOfFather = 'Unknown'
+					fatherOfFather = 'Unknown'
+					fatherAbsParents = 'Unknown'
 			
-			if mother == 'Unknown':
+
+
+
+			
+			if str(mother) == 'Unknown':
 				motherOfMother = 'Unknown'
 				fatherOfMother = 'Unknown'
+				motherAbsParents = 'Unknown'
 			else:
-				motherOfMother = self.allFamilyMembers[str(mother)].getFather()[0]
-				fatherOfMother = self.allFamilyMembers[str(mother)].getMother()[0]
+				if mother in self.allFamilyMembers:
+					motherOfMother = self.allFamilyMembers[str(mother)].getFather()[0]
+					fatherOfMother = self.allFamilyMembers[str(mother)].getMother()[0]
+					motherAbsParents = self.allFamilyMembers[str(mother)].getAbstractParents()[0]
+				else:
+					motherOfMother = 'Unknown'
+					fatherOfMother = 'Unknown'
+					motherAbsParents = 'Unknown'
+			
+			val.extend([fatherOfFather, motherOfFather, fatherOfMother, motherOfMother])
 
-			val.extend([fatherOfFather, motherOfFather, fatherOfMother, motherOfMother]) 
-			l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother)]
+			l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother), fatherAbsParents, motherAbsParents]
 				
 			newList.extend(l)
 		
 	
 		
 		if len(set(val)) == 1 and 'Unknown' in set(val):
-			print("Finished")
 			self.printTree(result)
 		else:
 			self.traverseTree(newList, result)
@@ -78,15 +105,102 @@ class Tree:
 		#self.traverseTree(self.allFamilyMembers[str(father[0])].getFather(), self.allFamilyMembers[str(mother[0])].getMother())
 
 	def printTree(self, result):
-		lengthStart = len(result[-1])
-		colspan = 0.5
-		for i, row in enumerate(reversed(result)):
-			colspan = colspan * 2
-			print("<tr>")
-			for father,mother in row:
-				print("<td colspan=" + str(int(colspan)) + ">" + father + " - " + mother + "</td>")
-			print("</tr>")
-			print()
+		nRows = len(result[-1])
+		
+		i = 0
+		x = nRows
+		trList = [x]
+		while x is not 1:
+			x = int(x / 2)
+			trList.append(x)
+			i += 1
+		nCols = i + 1
+
+
+
+		print(""" <html>
+				<head>
+				<style>
+				table {
+					font-size:10px;
+					margin:0px;
+					padding:0px;
+					border:none;
+				}
+
+				.couple  {
+					border: 1px solid;
+					height: 30px;
+					margin:10px;
+
+				}
+
+				.space {
+
+				}
+				</style>
+				</head>
+				<body>
+				<table>
+				<tr>
+		""")
+
+		for i, row in enumerate(result):
+			print("<td>")
+			print("<table>")
+			for father, mother, absParents in row:
+				if father == 'Unknown':
+					father = "*"
+				if mother == 'Unknown':
+					mother = "*"
+
+				print("<tr><td class='couple'> " + father + " - " +  mother + "(" + absParents +  ")</td></tr>")
+							
+			print("</table>")
+			print("</td>")
+				
+				
+				
+		print(""" 
+			</tr>
+			</table>
+			</body>
+			</html>
+		""")
+	
+
+		# for nTr in range(nRows):
+		# 	print("<tr>")
+		# 	for nTd in range(nCols):
+		# 		print("<td>test - test</td>")
+		# 		for i, row in enumerate(reversed(result)):
+	
+		# 	print("</tr>")
+
+		
+		# print(""" 	</table>
+		# 			</body>
+		# 			<html>
+		# 	""")
+
+		# for i, row in enumerate(result):
+		# 	for father, mother in row:			
+				
+	
+
+		
+
+		# <tr>
+
+		# </tr>
+		# colspan = 0.5
+		# for i, row in enumerate(reversed(result)):
+		# 	colspan = colspan * 2
+		# 	print("<tr>")
+		# 	for father,mother in row:
+		# 		print("<td colspan=" + str(int(colspan)) + ">" + father + " - " + mother + "</td>")
+		# 	print("</tr>")
+		# 	print()
 			
 
 
@@ -108,6 +222,11 @@ class Person:
 		self.father = wiki.getFather()
 		self.fullName = wiki.getFullName()
 		self.abstract = wiki.getAbstract()
+		self.abstractParents = wiki.getAbstractParents()
+		
+
+	def getAbstractParents(self):
+		return self.getAbstractParents()
 
 	def getFather(self):
 		return self.father
@@ -124,7 +243,7 @@ class Person:
 
 	def returnFamilyMembers(self):	
 		#properties = [self.mother , self.father , self.spouse]
-		properties = [self.mother, self.father, self.spouse]
+		properties = [self.mother, self.father]
 		if len(properties[0]) > 0 :
 			
 			return [value for value, propType in properties if propType == "uri"]
@@ -136,9 +255,15 @@ class Person:
 
 class getWikiInfo:
 #retrieves the family from wiki text and infoboxes
+	
 
 	def __init__(self, person):
-		#print(person)
+		
+
+		classifier = "ner/classifiers/" + "english.all.3class.distsim.crf.ser.gz"
+		jar = "ner/stanford-ner-3.4.jar"
+		self.tagger = NERTagger(classifier, jar)
+		self.ap = set()
 		self.person = person
 		self.query = Sparql(person)
 		self.setSpouse()
@@ -146,7 +271,36 @@ class getWikiInfo:
 		self.setFather()
 		self.setFullName()
 		self.setAbstract()
-	
+		self.setAbstractInfo()
+
+	def setAbstractInfo(self):
+
+		tokData = nltk.word_tokenize(self.abstract[0])
+		i = -1
+		for line in tokData:
+			i = i + 1
+			m = re.search('([^a-z][a-z]\.)', line)
+			if m:
+				line = line[:-1] + ';;'
+				tokData[i] = line
+					
+		sentences = nltk.word_tokenize(' '.join(tokData))
+		for sentence in sentences:
+			words = ['daughter of', 'son of', 'child of']
+			
+			# daughter of, son of, child of
+			if any(x in line for x in words):
+				for line in self.tagger.tag(line.split()):
+					for word in line:
+						if word[1] == 'PERSON':
+							self.ap.add(word[0])
+
+		
+
+
+	def getAbstractParents(self):
+		pass
+		#return self.ap
 
 	def setSpouse(self):
 		if 'spouse' in self.query.result:
@@ -197,9 +351,9 @@ class getWikiInfo:
 	
 
 		
-sys.setrecursionlimit(10000)
-#familyTree = Tree("Beatrix_of_the_Netherlands")
-familyTree = Tree("Caesarion")
+sys.setrecursionlimit(100000)
+familyTree = Tree("Beatrix_of_the_Netherlands")
+#familyTree = Tree("Caesarion")
 
 
 
