@@ -1,12 +1,9 @@
 from sparql import Sparql
 from collections import defaultdict
 import sys
-import nltk.data
-from nltk.tag.stanford import NERTagger 
-
+import nltk
+from nltk.tag import StanfordNERTagger 
 import re
-
-
 
 
 class Tree:
@@ -88,7 +85,7 @@ class Tree:
 			val.extend([fatherOfFather, motherOfFather, fatherOfMother, motherOfMother])
 
 			l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother), fatherAbsParents, motherAbsParents]
-				
+			#l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother)]	
 			newList.extend(l)
 		
 	
@@ -97,13 +94,7 @@ class Tree:
 			self.printTree(result)
 		else:
 			self.traverseTree(newList, result)
-		
-
-
-
-
-		#self.traverseTree(self.allFamilyMembers[str(father[0])].getFather(), self.allFamilyMembers[str(mother[0])].getMother())
-
+	
 	def printTree(self, result):
 		nRows = len(result[-1])
 		
@@ -168,49 +159,6 @@ class Tree:
 			</html>
 		""")
 	
-
-		# for nTr in range(nRows):
-		# 	print("<tr>")
-		# 	for nTd in range(nCols):
-		# 		print("<td>test - test</td>")
-		# 		for i, row in enumerate(reversed(result)):
-	
-		# 	print("</tr>")
-
-		
-		# print(""" 	</table>
-		# 			</body>
-		# 			<html>
-		# 	""")
-
-		# for i, row in enumerate(result):
-		# 	for father, mother in row:			
-				
-	
-
-		
-
-		# <tr>
-
-		# </tr>
-		# colspan = 0.5
-		# for i, row in enumerate(reversed(result)):
-		# 	colspan = colspan * 2
-		# 	print("<tr>")
-		# 	for father,mother in row:
-		# 		print("<td colspan=" + str(int(colspan)) + ">" + father + " - " + mother + "</td>")
-		# 	print("</tr>")
-		# 	print()
-			
-
-
-
-			
-		
-
-		
-
-
 class Person:
 #nodes in the tree
 	def __init__(self, person):
@@ -262,7 +210,7 @@ class getWikiInfo:
 
 		classifier = "ner/classifiers/" + "english.all.3class.distsim.crf.ser.gz"
 		jar = "ner/stanford-ner-3.4.jar"
-		self.tagger = NERTagger(classifier, jar)
+		self.tagger = StanfordNERTagger(classifier, jar)
 		self.ap = set()
 		self.person = person
 		self.query = Sparql(person)
@@ -297,10 +245,9 @@ class getWikiInfo:
 
 		
 
-
 	def getAbstractParents(self):
-		pass
-		#return self.ap
+		return " " .join(self.ap)
+
 
 	def setSpouse(self):
 		if 'spouse' in self.query.result:
