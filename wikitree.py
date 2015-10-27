@@ -4,6 +4,7 @@ import sys
 import nltk
 from nltk.tag import StanfordNERTagger 
 import re
+import wikipedia
 
 
 class Tree:
@@ -14,7 +15,7 @@ class Tree:
 		self.maxIter = 100
 		self.allFamilyMembers = {}
 		self.processNextFamilyMember(firstPerson)
-		parents = tuple( (self.allFamilyMembers[firstPerson].getFather()[0], self.allFamilyMembers[firstPerson].getMother()[0] ))
+		parents = tuple( (self.allFamilyMembers[firstPerson].getFather()[0], self.allFamilyMembers[firstPerson].getMother()[0], self.allFamilyMembers[firstPerson].getAbstractParents() ))
 		self.traverseTree([parents])
 		
 	
@@ -46,6 +47,7 @@ class Tree:
 		val = []
 		result.append(parents)
 		for parent in parents:
+			
 			father = parent[0] 
 			mother = parent[1]
 
@@ -58,7 +60,7 @@ class Tree:
 				if father in self.allFamilyMembers:
 					motherOfFather = self.allFamilyMembers[str(father)].getFather()[0]
 					fatherOfFather = self.allFamilyMembers[str(father)].getMother()[0]
-					fatherAbsParents = self.allFamilyMembers[str(father)].getAbstractParents()[0]
+					fatherAbsParents = self.allFamilyMembers[str(father)].getAbstractParents()
 				else:
 					motherOfFather = 'Unknown'
 					fatherOfFather = 'Unknown'
@@ -76,7 +78,7 @@ class Tree:
 				if mother in self.allFamilyMembers:
 					motherOfMother = self.allFamilyMembers[str(mother)].getFather()[0]
 					fatherOfMother = self.allFamilyMembers[str(mother)].getMother()[0]
-					motherAbsParents = self.allFamilyMembers[str(mother)].getAbstractParents()[0]
+					motherAbsParents = self.allFamilyMembers[str(mother)].getAbstractParents()
 				else:
 					motherOfMother = 'Unknown'
 					fatherOfMother = 'Unknown'
@@ -84,13 +86,14 @@ class Tree:
 			
 			val.extend([fatherOfFather, motherOfFather, fatherOfMother, motherOfMother])
 
-			l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother), fatherAbsParents, motherAbsParents]
+			l = [(fatherOfFather, motherOfFather, fatherAbsParents) , (fatherOfMother, motherOfMother, motherAbsParents)]
 			#l = [(fatherOfFather, motherOfFather) , (fatherOfMother, motherOfMother)]	
 			newList.extend(l)
 		
 	
 		
 		if len(set(val)) == 1 and 'Unknown' in set(val):
+			#pass
 			self.printTree(result)
 		else:
 			self.traverseTree(newList, result)
@@ -145,7 +148,7 @@ class Tree:
 				if mother == 'Unknown':
 					mother = "*"
 
-				print("<tr><td class='couple'> " + father + " - " +  mother + "(" + absParents +  ")</td></tr>")
+				print("<tr><td class='couple'> " + father + " - " +  mother + " (" + absParents +  ")</td></tr>")
 							
 			print("</table>")
 			print("</td>")
@@ -162,7 +165,6 @@ class Tree:
 class Person:
 #nodes in the tree
 	def __init__(self, person):
-		
 		self.name = person
 		wiki = getWikiInfo(person)
 		self.spouse = wiki.getSpouse()
@@ -174,7 +176,7 @@ class Person:
 		
 
 	def getAbstractParents(self):
-		return self.getAbstractParents()
+		return self.abstractParents
 
 	def getFather(self):
 		return self.father
@@ -207,11 +209,11 @@ class getWikiInfo:
 
 	def __init__(self, person):
 		
-
+		self.tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
 		classifier = "ner/classifiers/" + "english.all.3class.distsim.crf.ser.gz"
 		jar = "ner/stanford-ner-3.4.jar"
 		self.tagger = StanfordNERTagger(classifier, jar)
-		self.ap = set()
+		self.ap = []
 		self.person = person
 		self.query = Sparql(person)
 		self.setSpouse()
@@ -222,31 +224,39 @@ class getWikiInfo:
 		self.setAbstractInfo()
 
 	def setAbstractInfo(self):
+		try:
+			conObj = wikipedia.page(self.person)
+			content = conObj.content
+		except wikipedia.exceptions.DisambiguationError as e:
+			content = None
+		except wikipedia.exceptions.PageError as e:
+			content = None
+		
+		
 
-		tokData = nltk.word_tokenize(self.abstract[0])
-		i = -1
-		for line in tokData:
-			i = i + 1
-			m = re.search('([^a-z][a-z]\.)', line)
-			if m:
-				line = line[:-1] + ';;'
-				tokData[i] = line
-					
-		sentences = nltk.word_tokenize(' '.join(tokData))
-		for sentence in sentences:
-			words = ['daughter of', 'son of', 'child of']
-			
-			# daughter of, son of, child of
-			if any(x in line for x in words):
-				for line in self.tagger.tag(line.split()):
-					for word in line:
-						if word[1] == 'PERSON':
-							self.ap.add(word[0])
+		if content:
+			for sentence in self.tokenizer.tokenize(content):
+				words = ['daughter of', 'son of', 'child of']
+				
+				# daughter of, son of, child of
+				if any(x in sentence for x in words):
+					person = ''
+					for tag in self.tagger.tag(sentence.split()):
+							
+						if tag[1] == 'PERSON':
+							person = person + " " + tag[0]
+						else:
+							if not person == '':
+								self.ap.append(person)
+							person = ''
 
 		
 
 	def getAbstractParents(self):
-		return " " .join(self.ap)
+		if len(self.ap) > 0:
+			return ", " .join(set(self.ap))
+		else:
+			return "Unknown"
 
 
 	def setSpouse(self):
@@ -298,7 +308,7 @@ class getWikiInfo:
 	
 
 		
-sys.setrecursionlimit(100000)
+#sys.setrecursionlimit(100000)
 familyTree = Tree("Beatrix_of_the_Netherlands")
 #familyTree = Tree("Caesarion")
 
