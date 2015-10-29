@@ -236,10 +236,18 @@ class getWikiInfo:
 
 		if content:
 			for sentence in self.tokenizer.tokenize(content):
-				words = ['daughter of', 'son of', 'child of']
-				
+				if 'daughter of' in sentence:
+					sentence = sentence[sentence.find('daughter of'):]
+				elif 'son of' in sentence:
+					sentence = sentence[sentence.find('son of'):]
+				elif 'child of' in sentence:
+					sentence = sentence[sentence.find('child of'):]
+				else:
+					sentence = False
+
+
 				# daughter of, son of, child of
-				if any(x in sentence for x in words):
+				if sentence is not False:
 					person = ''
 					for tag in self.tagger.tag(sentence.split()):
 							
@@ -309,8 +317,8 @@ class getWikiInfo:
 
 		
 #sys.setrecursionlimit(100000)
-familyTree = Tree("Beatrix_of_the_Netherlands")
-#familyTree = Tree("Caesarion")
+#familyTree = Tree("Beatrix_of_the_Netherlands")
+familyTree = Tree("Caesarion")
 
 
 
