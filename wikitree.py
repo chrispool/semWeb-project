@@ -20,10 +20,9 @@ class Tree:
 		
 	
 	def processNextFamilyMember(self, person, remaingPersons = set()):
-		#print(person, len(self.allFamilyMembers.keys()))
 		#add person
 		self.allFamilyMembers[person] = Person(person)
-		#print( "{} {} - {} ".format(person, len(self.allFamilyMembers.keys()), len(remaingPersons)))
+		
 		#get relatives from this person
 		relatives = self.allFamilyMembers[person].returnFamilyMembers()
 
@@ -161,6 +160,69 @@ class Tree:
 			</body>
 			</html>
 		""")
+
+	def printTreeEval(self, result):
+			nRows = len(result[-1])
+			
+			i = 0
+			x = nRows
+			trList = [x]
+			while x is not 1:
+				x = int(x / 2)
+				trList.append(x)
+				i += 1
+			nCols = i + 1
+
+
+
+			print(""" <html>
+					<head>
+					<style>
+					table {
+						font-size:10px;
+						margin:0px;
+						padding:0px;
+						border:none;
+					}
+
+					.couple  {
+						border: 1px solid;
+						height: 30px;
+						margin:10px;
+
+					}
+
+					.space {
+
+					}
+					</style>
+					</head>
+					<body>
+					<table>
+				
+			""")
+
+			for i, row in enumerate(result):
+
+				for father, mother, absParents in row:
+					if father == 'Unknown':
+						father = "*"
+					if mother == 'Unknown':
+						mother = "*"
+
+					print("<tr><td> " + father + " - " +  mother + "</td><td>" + absParents +  ")</td></tr>")
+								
+
+					
+					
+					
+			print(""" 
+			
+				</table>
+				</body>
+				</html>
+			""")
+	
 	
 class Person:
 #nodes in the tree
@@ -317,8 +379,8 @@ class getWikiInfo:
 
 		
 #sys.setrecursionlimit(100000)
-#familyTree = Tree("Beatrix_of_the_Netherlands")
-familyTree = Tree("Caesarion")
+familyTree = Tree("Beatrix_of_the_Netherlands")
+#familyTree = Tree("Caesarion")
 
 
 
